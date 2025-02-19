@@ -7,7 +7,7 @@
         "test": "/home/matsukawa_3/datasets/EBB/Test",
         "input": "bokeh/",
         "target": "original/",
-        "output": "GeneralLibrary/outputs/"
+        "output": "bokeh/outputs/"
     },
     "option": {
         "mode": 0,
@@ -18,9 +18,9 @@
         "save_interval": 1
     },
     "hyperparam": {
-        "epoch": 1,
+        "epoch": 2,
         "lr": 1.0e-3,
-        "batch_size": 48,
+        "batch_size": 1,
         "iteration": 10000,
         "num_workers": 4
     }

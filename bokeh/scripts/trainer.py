@@ -1,10 +1,12 @@
-from torch import save, Tensor
+from torch import save, mean, load
 # TODO
 from torch.nn import Module
 from torch.utils.data import DataLoader
 from util.data.dataset import ImageToImageDataset
 from scripts.recorder import Recorder
 from model.net import Net
+from metrics.psnr import PSNR
+from metrics.ssim import SSIM
 
 class Trainer(Recorder):
     def __init__(self):
@@ -19,6 +21,8 @@ class Trainer(Recorder):
         self.valid_dataloader: DataLoader = None
         self.optimizer = None
         self.criteria = None
+        self.psnr = PSNR()
+        self.ssim = SSIM()
         self.SetDevice(self.cfg.GetInfo("option", "device"))
         self.epochs = self.cfg.GetHyperParam("epoch")
 
@@ -63,6 +67,7 @@ class Trainer(Recorder):
             self.model.eval()
 
         loss = None
+        accr = {"PSNR": 0, "SSIM": 0}
         # 学習
         for i, (img_input, img_target) in enumerate(self.dataloader[0], 1):
             # GPU(CPU)にデータを移動
@@ -82,6 +87,14 @@ class Trainer(Recorder):
                 loss.backward()
                 # オプティマイザの更新
                 self.optimizer.step()
+            else:
+                # TODO ssim
+                accr["SSIM"] += self.ssim(img_output, img_target, self.cfg.GetInfo("option", "device")).to("cpu").detach().numpy().copy()
+                o = img_output.to("cpu").detach().numpy().copy()
+                t = img_target.to("cpu").detach().numpy().copy()
+                self.Debug(f"input: {img_input.shape}")
+                self.Debug(f"target: {img_output.shape}")
+                accr["PSNR"] += self.psnr(o, t)
 
             if (i + 1) % self.cfg.GetInfo("option", "cli_interval"):
                 # ターミナルに学習状況を表示
@@ -92,15 +105,23 @@ class Trainer(Recorder):
                                 self.cfg.GetHyperParam("lr"),
                                 loss=loss.item())
                 if not is_train:
-                    self.Info(f"validating...{loss.item()}", extra={ "n": 1 })
+                    self.Info(f"validating... PSNR : {accr['PSNR']} SSIM : ", extra={ "n": 1 })
             
             
     def PutModel(self, epoch, loss=0.0):
-        save(obj={"epoch": epoch,
-                  "model_state_dict": self.model.state_dict(),
-                  "optimizer_state_dict": self.optimizer.state_dict(),
-                  "loss": loss},
-             f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
+        if self.device == "cuda":
+            save(obj={"epoch": epoch,
+                    "model_state_dict": self.model.to("cpu").state_dict(),
+                    "optimizer_state_dict": self.optimizer.state_dict(),
+                    "loss": loss},
+                f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
+        else:
+            save(obj={"epoch": epoch,
+                    "model_state_dict": self.model.state_dict(),
+                    "optimizer_state_dict": self.optimizer.state_dict(),
+                    "loss": loss},
+                f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
+        
         self.Debug("model weight is saved.")
 
     def SetModel(self, model_class=Net):        
@@ -108,6 +129,16 @@ class Trainer(Recorder):
 
         assert isinstance(self.model, Module), f"\n[ERROR] incorrect model class: {type(model_class)}"
         self.Debug("Model created.")
+
+        # 重みの読み込み
+        # この段階ではcpu上にあるのでOK
+        if self.args.weight_path is not None:
+            self.Info(f"load weight: {self.args.weight_path}\n")
+            weight = load(self.args.weight_path, weights_only=True)["model_state_dict"]
+            for key, val in weight.items():
+                self.Info(f"{key} : {val}\n")
+            self.model.load_state_dict(load(self.args.weight_path, weights_only=True)["model_state_dict"])
+
 
     def SetDataset(self, img_dir, input_dir, target_dir):
         self.train_dataset = ImageToImageDataset(img_dir, input_dir, target_dir)

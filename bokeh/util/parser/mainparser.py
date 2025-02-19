@@ -4,13 +4,6 @@ class MainParser(ArgumentParser):
     def __init__(self):
         super().__init__()
 
-        # テスト
-        self.add_argument(
-            "--test", "-t",
-            action="store_true",
-            default=False,
-            help="[flag] テスト"
-        )
         # 必須
         # mode
         self.add_argument(
@@ -33,6 +26,12 @@ class MainParser(ArgumentParser):
             type=str,
             default="cpu",
             help="[cuda, cpu] プログラムを実行するプロセッサ"
+        )
+
+        self.add_argument(
+            "--weight_path", "-w",
+            type=str,
+            help="[string] 学習済みの重みへのパス"
         )
 
 if __name__ == "__main__":
