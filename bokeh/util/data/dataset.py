@@ -37,6 +37,9 @@ class ImageToImageDataset(Dataset):
         return (img_input, img_target)
     
     def SetImgId(self):
+        self.input_id = ["0.jpg", "1.jpg"]
+        self.target_id = ["0.jpg", "1.jpg"]
+        return
         self.input_id = [
             file 
             for file in os.listdir(os.path.join(self.img_dir, self.input_dir))
@@ -47,6 +50,9 @@ class ImageToImageDataset(Dataset):
             for file in os.listdir(os.path.join(self.img_dir, self.target_dir))
             if self.GetIsImage(file, False)
         ]
+
+        self.input_id.sort()
+        self.target_id.sort()
 
         print(os.path.join(self.img_dir, self.input_dir))
         print(f"total img: {self.__len__()}\n")
