@@ -30,7 +30,7 @@ class Runner(Analyzer):
         self.SetLogDigits(self.epochs, len(self.train_dataset) // self.cfg.GetHyperParam("batch_size") + 1)
         
         # モデル定義
-        self.model = PyNET(1)
+        self.model = PyNET(5)
         self.model.to(self.device)
         # オプティマイザ定義
         self.optimizer = Adam(self.model.parameters(), lr=self.cfg.GetHyperParam("lr"))
