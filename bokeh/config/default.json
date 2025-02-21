@@ -1,27 +1,26 @@
 {
     "debug": true,
     "path": {
-        "dataset": "/home/matsukawa_3/datasets/EBB/Training/",
-        "train": "/home/matsukawa_3/datasets/EBB/Training/",
-        "validation": "/home/matsukawa_3/datasets/EBB/Training/",
-        "test": "/home/matsukawa_3/datasets/EBB/Test",
-        "input": "bokeh/",
-        "target": "original/",
+        "dataset": "/home/matsukawa_3/datasets/Bokeh_Simulation_Dataset/",
+        "train": "train/",
+        "validation": "validation/",
+        "test": "test/",
+        "input": "original/",
+        "target": "bokeh/",
         "output": "bokeh/outputs/"
     },
     "option": {
         "mode": 0,
         "device": "cuda",
-        "interval": 10,
         "val_interval": 1,
-        "cli_interval": 3,
+        "log_interval": 10,
         "save_interval": 1
     },
     "hyperparam": {
-        "epoch": 2,
+        "epoch": 20,
         "lr": 1.0e-3,
-        "batch_size": 1,
+        "batch_size": 2,
         "iteration": 10000,
-        "num_workers": 4
+        "num_workers": 2
     }
 }

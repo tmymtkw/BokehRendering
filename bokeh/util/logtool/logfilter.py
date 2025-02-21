@@ -7,10 +7,10 @@ class LogFilter():
     def filter(self, record):
         if hasattr(record, "status"):
             record.msg = self.GetLogMsg(record.status)
-        return True
+        return "validating" not in record.msg[0:10]
     
     def GetLogMsg(self, status):
-        msg = f'[epoch: {status["cur_epoch"]:>{self.e}} / {status["max_epoch"]:>{self.e}}]\t\t[itr: {status["cur_itr"]:>{self.i}} / {status["max_itr"]:>{self.i}}]\t\t[ lr: {status["lr"]:.3e} | loss: {status["loss"]:>.6f}'
+        msg = f'[epoch: {status["cur_epoch"]:>{self.e}} / {status["max_epoch"]:>{self.e}}] [itr: {status["cur_itr"]:>{self.i}} / {status["max_itr"]:>{self.i}}] [ lr: {status["lr"]:.3e} | loss: {status["loss"]:>.6f}'
         return msg
     
     def SetDigits(self, e, i):

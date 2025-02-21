@@ -1,6 +1,8 @@
 import torch.cuda as cuda
+from torch import clip, float32, rand
 from torchvision.utils import save_image
 from torchvision import io
+from model.pynet import PyNET
 import json
 
 def main():
@@ -9,19 +11,24 @@ def main():
     else:
         print("WARNING : CUDAは使用不可")
 
-    path = "/home/matsukawa_3/datasets/nightphoto/train/raw/0"
-    image = io.read_image(path+".png", io.ImageReadMode.UNCHANGED)
-    image_huawei = io.read_image("/home/matsukawa_3/datasets/nightphoto/train/huawei/0.png", io.ImageReadMode.UNCHANGED)
-    image_sony = io.read_image("/home/matsukawa_3/datasets/nightphoto/train/sony/0.JPG", io.ImageReadMode.UNCHANGED)
-    js = None
-    with open(path+".json", mode="r") as f:
-        js = json.load(f)
+    path = "/home/matsukawa_3/datasets/Bokeh_Simulation_Dataset/validation/"
 
-    print(image.shape, image_huawei.shape, image_sony.shape, end="\n\n")
-    print(image[0, 0:8, 0:8])
-    print(image_huawei[1, 0:4, 0:4])
-    for key, val in js.items():
-        print(key, ":", val)
+    for i in range(5):
+        image_input = io.read_image(path+f"original/{i}.jpg", io.ImageReadMode.RGB)
+        image_target = io.read_image(path+f"bokeh/{i}.jpg", io.ImageReadMode.RGB)
+
+        img_salient = (image_target.to(dtype=float32) - image_input.to(dtype=float32)) / 255.0
+
+        img_salient = clip(img_salient, 0.0, 255.0)
+
+        save_image(img_salient, f"bokeh/outputs/salient_t-s_{i}.png")
+
+    i = rand((1, 4, 1024, 1024), dtype=float32)
+    print("model analyzing")
+    model = PyNET(level=1)
+    # print(model)
+    o = model(i)
+    print(o.shape)
 
 if __name__ == "__main__":
     main()
