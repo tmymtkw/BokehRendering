@@ -24,7 +24,7 @@ class CLIFilter():
                + "[iter]    |" + FILL + ("_" * itr_bar) + CLOSE + "_" * (self.length - itr_bar) + "|\n"
                + f"[parm]    lr : {status['lr']:<12f}\n"
                + f"[loss]    curr : {status['loss']:<12f} mean : {mean(self.losses):<12f}\n"
-               + f"[best]")
+               + f"")
         
         if itr_bar == self.length:
             self.losses.clear()

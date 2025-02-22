@@ -100,7 +100,7 @@ class Trainer(Recorder):
                 self.optimizer.step()
             else:
                 # TODO ssim
-                accr["SSIM"] = self.ssim(img_output, img_target, self.cfg.GetInfo("option", "device")).to("cpu").detach().numpy().copy()
+                accr["SSIM"] += mean(self.ssim(img_output, img_target, self.cfg.GetInfo("option", "device"))).item()
                 o = img_output.to("cpu").detach().numpy().copy()
                 t = img_target.to("cpu").detach().numpy().copy()
                 # self.Debug(f"input: {img_input.shape}")
@@ -109,18 +109,20 @@ class Trainer(Recorder):
             if (i == 1):
                 self.Debug(f"require_grad: {img_output.requires_grad}")
 
-            if i % self.cfg.GetInfo("option", "log_interval") == 0:
+            if i == 1 or i % self.cfg.GetInfo("option", "log_interval") == 0:
                 # ターミナルに学習状況を表示
-                if is_train:
-                    self.DisplayStatus(epoch,
+                self.DisplayStatus(epoch,
                                     i,
                                     self.epochs,
                                     len(self.train_dataset) // self.cfg.GetHyperParam("batch_size"),
                                     self.cfg.GetHyperParam("lr"),
                                     loss=loss.item())
-                else:
-                    self.Info(f"validating... loss : {loss.item()} PSNR : {accr['PSNR'] / i} SSIM : {accr['SSIM'].shape}", extra={ "n": 1 })
-            
+                if not is_train:
+                    self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i}", extra={ "n": 1 })
+        
+        # validationの場合は最後に精度を出力
+        if not is_train:
+            self.Info(f"loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i}", extra={ "n": 1 })
             
     def PutModel(self, epoch, loss=0.0):
         if self.device == "cuda":
@@ -153,7 +155,8 @@ class Trainer(Recorder):
                 self.Info(f"{key} : {val}\n")
             self.model.load_state_dict(load(self.args.weight_path, weights_only=True)["model_state_dict"])
 
-    def SetDataset(self, img_dir, input_dir, target_dir):
+    def SetDataset(self
+                   ):
         self.train_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("train"),
                                           self.cfg.GetPath("input"),
                                           self.cfg.GetPath("target"))

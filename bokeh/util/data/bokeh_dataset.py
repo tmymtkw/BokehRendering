@@ -1,7 +1,7 @@
 import os
 from torch.utils.data import Dataset
 from torchvision import io
-from util.data.transforms import Stack, RandomFlip, RandomCrop, Convert, Scaling
+from util.data.transforms import Stack, RandomFlip, RandomCrop, Convert, Scaling, Normalize
 
 class BokehDataset(Dataset):
     def __init__(self, img_dir, input_dir, target_dir, seed=42):
@@ -20,6 +20,7 @@ class BokehDataset(Dataset):
         self.stack.Push(Scaling(size=[256, 256]))
         self.stack.Push(RandomFlip(seed=seed))
         self.stack.Push(Convert(convert_type="float32"))
+        self.stack.Push(Normalize())
 
     def __len__(self) -> int:
         return len(self.img_id)
