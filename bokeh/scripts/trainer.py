@@ -18,8 +18,7 @@ class Trainer(Recorder):
 
         self.model: Module = None
 
-        self.train_dataset: BokehDataset = None
-        self.valid_dataset: BokehDataset = None
+        self.dataset: BokehDataset = []
 
         self.dataloader: list[DataLoader] = []
 
@@ -27,8 +26,9 @@ class Trainer(Recorder):
         self.criteria = None
         self.psnr = PSNR()
         self.ssim = SSIM()
-        self.SetDevice(self.cfg.GetInfo("option", "device"))
         self.epochs = self.cfg.GetHyperParam("epoch")
+
+        # self.scaler = torch.cuda.amp.GradScaler("cuda")
 
     # TODO
     def Train(self):
@@ -51,7 +51,7 @@ class Trainer(Recorder):
                 self.Validate(epoch=epoch)
             
             # 重み保存
-            if ((epoch+1) % self.cfg.GetInfo("option", "save_interval") or (epoch + 1) == self.epochs):
+            if ((epoch+1) % self.cfg.GetInfo("option", "save_interval") == 0 or (epoch + 1) == self.epochs):
                 self.PutModel(epoch)
 
     def Validate(self, epoch):
@@ -77,8 +77,10 @@ class Trainer(Recorder):
         # 学習
         for i, (img_input, img_target) in enumerate(self.dataloader[is_train], 1):
             # GPU(CPU)にデータを移動
-            img_input = img_input.to(self.device, non_blocking=True)
-            img_target = img_target.to(self.device, non_blocking=True)
+            # img_input = img_input.to(self.device, non_blocking=True)
+            # img_target = img_target.to(self.device, non_blocking=True)
+            img_input = img_input.to(self.cfg.GetDevice())
+            img_target = img_target.to(self.cfg.GetDevice())
             # self.Debug(f"{img_input.shape}")
             # self.Debug(f"{img_target.shape}")
 
@@ -114,23 +116,25 @@ class Trainer(Recorder):
                 self.DisplayStatus(epoch,
                                     i,
                                     self.epochs,
-                                    len(self.train_dataset) // self.cfg.GetHyperParam("batch_size"),
+                                    len(self.dataset[is_train]) // self.cfg.GetHyperParam("batch_size"),
                                     self.cfg.GetHyperParam("lr"),
                                     loss=loss.item())
                 if not is_train:
-                    self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i}", extra={ "n": 1 })
+                    self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i:.12f}", extra={ "n": 1 })
         
         # validationの場合は最後に精度を出力
         if not is_train:
-            self.Info(f"loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i}", extra={ "n": 1 })
+            self.Info(f"[total] loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i:12f}", extra={ "n": 1 })
             
     def PutModel(self, epoch, loss=0.0):
-        if self.device == "cuda":
+        if self.cfg.GetDevice() == "cuda":
             save(obj={"epoch": epoch,
                     "model_state_dict": self.model.to("cpu").state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "loss": loss},
                 f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
+            # .to()によるメモリ移動を戻す
+            self.model.to("cuda")
         else:
             save(obj={"epoch": epoch,
                     "model_state_dict": self.model.state_dict(),
@@ -138,7 +142,7 @@ class Trainer(Recorder):
                     "loss": loss},
                 f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
         
-        self.Debug("model weight is saved.")
+        self.Debug(f"model at epoch {epoch} weight is saved.")
 
     def SetModel(self, model_class=Net):        
         self.model = model_class()
@@ -157,12 +161,13 @@ class Trainer(Recorder):
 
     def SetDataset(self
                    ):
-        self.train_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("train"),
+        train_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("train"),
                                           self.cfg.GetPath("input"),
                                           self.cfg.GetPath("target"))
-        self.valid_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("validation"),
+        valid_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("validation"),
                                      self.cfg.GetPath("input"),
                                      self.cfg.GetPath("target"))
+        self.dataset = [valid_dataset, train_dataset]
         self.Debug("Dataset created.")
 
     def SetDataLoader(self,
@@ -172,13 +177,13 @@ class Trainer(Recorder):
                       pin_memory=True,
                       drop_last=True):
         # TODO: for d in self.dataset:
-        train_dataloader = DataLoader(self.train_dataset,
+        train_dataloader = DataLoader(self.dataset[1],
                                      batch_size=batch_size,
                                      shuffle=shuffle,
                                      num_workers=num_workers,
                                      pin_memory=pin_memory,
                                      drop_last=drop_last)
-        valid_dataloader = DataLoader(self.valid_dataset,
+        valid_dataloader = DataLoader(self.dataset[0],
                                       batch_size=1,
                                       shuffle=False,
                                       num_workers=1,
@@ -188,12 +193,12 @@ class Trainer(Recorder):
         self.dataloader.append(train_dataloader)
         self.Debug("Dataloader created.")
         
-    def SetDevice(self, device):
-        assert (device == "cuda" or device == "cpu"), \
-            f"\n[ERROR] incorrevt device type : {device}"
+    # def SetDevice(self, device):
+    #     assert (device == "cuda" or device == "cpu"), \
+    #         f"\n[ERROR] incorrevt device type : {device}"
         
-        self.Debug(f"setting device: {device}")
-        self.device = device
+    #     self.Debug(f"setting device: {device}")
+    #     self.device = device
     
     def DisplayStatus(self, cur_epoch, cur_itr, max_epoch, max_itr, lr=0.0, loss=0.0):
         """学習状況の標準出力

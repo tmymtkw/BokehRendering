@@ -25,17 +25,17 @@ class Runner(Analyzer):
                            pin_memory=True,
                            drop_last=self.is_train)
         # ログ書式設定
-        self.SetLogDigits(self.epochs, len(self.train_dataset) // self.cfg.GetHyperParam("batch_size") + 1)
+        self.SetLogDigits(self.epochs, len(self.dataset[1]) // self.cfg.GetHyperParam("batch_size") + 1)
         
         # モデル定義
         self.model = PyNET(1)
-        self.model.to(self.device)
+        self.model.to(self.cfg.GetDevice())
         # オプティマイザ定義
         self.optimizer = Adam(self.model.parameters(), lr=self.cfg.GetHyperParam("lr"))
         # 損失関数設定
         self.criteria = MSELoss()
-        # 使用プロセッサ設定
-        self.SetDevice(device=self.cfg.GetInfo("option", "device"))
+        # # 使用プロセッサ設定
+        # self.SetDevice(device=self.cfg.GetInfo("option", "device"))
 
         # メイン処理実行
         self.Operate()
