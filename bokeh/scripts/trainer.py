@@ -19,7 +19,7 @@ class Trainer(Recorder):
         self.model: Module = None
 
         self.dataset: BokehDataset = []
-
+        self.size = [0, 0]
         self.dataloader: list[DataLoader] = []
 
         self.optimizer = None
@@ -116,16 +116,12 @@ class Trainer(Recorder):
                 self.DisplayStatus(epoch,
                                     i,
                                     self.epochs,
-                                    len(self.dataset[is_train]) // self.cfg.GetHyperParam("batch_size"),
+                                    self.size[is_train],
                                     self.cfg.GetHyperParam("lr"),
                                     loss=loss.item())
                 if not is_train:
                     self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i:.12f}", extra={ "n": 1 })
-        
-        # validationの場合は最後に精度を出力
-        if not is_train:
-            self.Info(f"[total] loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i:12f}", extra={ "n": 1 })
-            
+                    
     def PutModel(self, epoch, loss=0.0):
         if self.cfg.GetDevice() == "cuda":
             save(obj={"epoch": epoch,
@@ -168,6 +164,7 @@ class Trainer(Recorder):
                                      self.cfg.GetPath("input"),
                                      self.cfg.GetPath("target"))
         self.dataset = [valid_dataset, train_dataset]
+        self.size = [len(valid_dataset), len(train_dataset) // self.cfg.GetHyperParam("batch_size")]
         self.Debug("Dataset created.")
 
     def SetDataLoader(self,
