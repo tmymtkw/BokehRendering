@@ -1,10 +1,10 @@
 import os
 from torch.utils.data import Dataset
 from torchvision import io
-from util.data.transforms import Stack, RandomFlip, RandomCrop, Convert, Scaling, Normalize
+from util.data.transforms import Stack, RandomFlip, RandomCrop, Convert, Scaling, Normalize, CenterCrop
 
 class BokehDataset(Dataset):
-    def __init__(self, img_dir, input_dir, target_dir, seed=42):
+    def __init__(self, img_dir, input_dir, target_dir, seed=42, is_train=True):
         super().__init__()
 
         assert os.path.isdir(img_dir), self.PutError(img_dir)
@@ -16,9 +16,12 @@ class BokehDataset(Dataset):
         self.SetImgId()
 
         self.stack = Stack(seed=seed)
-        self.stack.Push(RandomCrop(height=1024, width=1024, seed=seed))
-        self.stack.Push(Scaling(size=[256, 256]))
-        self.stack.Push(RandomFlip(seed=seed))
+        if is_train:
+            self.stack.Push(RandomCrop(height=1024, width=1024, seed=seed))
+            self.stack.Push(Scaling(size=[256, 256]))
+            self.stack.Push(RandomFlip(seed=seed))
+        else:
+            self.stack.Push(CenterCrop(h=1024, w=1024, seed=seed))
         self.stack.Push(Convert(convert_type="float32"))
         self.stack.Push(Normalize())
 
@@ -31,6 +34,7 @@ class BokehDataset(Dataset):
                                   io.ImageReadMode.RGB)
         img_target = io.read_image(os.path.join(self.img_dir, self.target_dir, self.img_id[index]),
                                    io.ImageReadMode.RGB)
+        # print(os.path.join(self.img_dir, self.input_dir, self.img_id[index]), os.path.join(self.img_dir, self.target_dir, self.img_id[index]), end="\n\n\n")
 
         # データの前処理
         img_input, img_target = self.stack(img_input, img_target)

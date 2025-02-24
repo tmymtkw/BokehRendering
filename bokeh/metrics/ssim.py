@@ -13,7 +13,7 @@ class SSIM():
         self.c2 = 0.03 ** 2
 
     def __call__(self, img_output, img_target, device):
-        if self.kernel.device != img_output:
+        if self.kernel.device != img_output.device:
             self.kernel = self.kernel.to(device)
         return self.GetSSIM(img_output, img_target)
         
@@ -27,7 +27,9 @@ class SSIM():
             uyy = conv2d(t * t, self.kernel, padding=self.padding, groups=3)
             uxy = conv2d(s * t, self.kernel, padding=self.padding, groups=3)
 
-            return (2 * ux * uy + self.c1) * (2 * (uxy - ux * uy) + self.c2) / (ux ** 2 + uy ** 2 + self.c1) * ((uxx - ux * ux) + uyy - uy * uy + self.c2)
+            # print(ux.shape, uy.shape, uxx.shape, uyy.shape, uxy.shape)
+            return ((2 * ux * uy + self.c1) * (2 * (uxy - ux * uy) + self.c2) 
+                    / (ux ** 2 + uy ** 2 + self.c1) / ((uxx - ux * ux) + (uyy - uy * uy) + self.c2))
         
 
     def GetKernel(self, kernel_size: int, sigma: float) -> Tensor:
@@ -43,3 +45,8 @@ class SSIM():
     
     def __repr__(self):
         return "SSIM"
+    
+if __name__ == "__main__":
+    ssim = SSIM()
+    source = "/home/matsukawa_3/datasets/Bokeh_Simulation_Dataset/train/bokeh/0.jpg"
+    target = "/home/matsukawa_3/datasets/Bokeh_Simulation_Dataset/train/original/0.jpg"

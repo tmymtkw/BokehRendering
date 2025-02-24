@@ -42,16 +42,16 @@ class Trainer(Recorder):
 
         assert self.model is not None, "\n[ERROR] model is not defined"
 
-        for epoch in range(self.epochs):
+        for epoch in range(1, self.epochs+1):
             self.Debug("-----train--------")
             self.Process(epoch=epoch, is_train=True)
 
             # Validation
-            if ((epoch+1) % self.cfg.GetInfo("option", "val_interval") == 0):
+            if (epoch % self.cfg.GetInfo("option", "val_interval") == 0):
                 self.Validate(epoch=epoch)
             
             # 重み保存
-            if ((epoch+1) % self.cfg.GetInfo("option", "save_interval") == 0 or (epoch + 1) == self.epochs):
+            if (epoch % self.cfg.GetInfo("option", "save_interval") == 0 or epoch == self.epochs):
                 self.PutModel(epoch)
 
     def Validate(self, epoch):
@@ -102,7 +102,7 @@ class Trainer(Recorder):
                 self.optimizer.step()
             else:
                 # TODO ssim
-                accr["SSIM"] += mean(self.ssim(img_output, img_target, self.cfg.GetInfo("option", "device"))).item()
+                accr["SSIM"] += mean(self.ssim(img_output, img_target, self.cfg.GetDevice())).item()
                 o = img_output.to("cpu").detach().numpy().copy()
                 t = img_target.to("cpu").detach().numpy().copy()
                 # self.Debug(f"input: {img_input.shape}")
@@ -120,7 +120,7 @@ class Trainer(Recorder):
                                     self.cfg.GetHyperParam("lr"),
                                     loss=loss.item())
                 if not is_train:
-                    self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/self.cfg.GetHyperParam('batch_size')/i:.12f} SSIM : {accr['SSIM']/self.cfg.GetHyperParam('batch_size')/i:.12f}", extra={ "n": 1 })
+                    self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/i:.12f} SSIM : {accr['SSIM']/i:.12f}", extra={ "n": 1 })
                     
     def PutModel(self, epoch, loss=0.0):
         if self.cfg.GetDevice() == "cuda":
@@ -162,7 +162,8 @@ class Trainer(Recorder):
                                           self.cfg.GetPath("target"))
         valid_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("validation"),
                                      self.cfg.GetPath("input"),
-                                     self.cfg.GetPath("target"))
+                                     self.cfg.GetPath("target"),
+                                     is_train=False)
         self.dataset = [valid_dataset, train_dataset]
         self.size = [len(valid_dataset), len(train_dataset) // self.cfg.GetHyperParam("batch_size")]
         self.Debug("Dataset created.")
@@ -189,13 +190,6 @@ class Trainer(Recorder):
         self.dataloader.append(valid_dataloader)
         self.dataloader.append(train_dataloader)
         self.Debug("Dataloader created.")
-        
-    # def SetDevice(self, device):
-    #     assert (device == "cuda" or device == "cpu"), \
-    #         f"\n[ERROR] incorrevt device type : {device}"
-        
-    #     self.Debug(f"setting device: {device}")
-    #     self.device = device
     
     def DisplayStatus(self, cur_epoch, cur_itr, max_epoch, max_itr, lr=0.0, loss=0.0):
         """学習状況の標準出力
@@ -203,8 +197,8 @@ class Trainer(Recorder):
         同じフォーマットで描画を更新する
         """
 
-        self.Info(msg="", extra={"status": {"cur_epoch": cur_epoch+1,
-                                            "cur_itr": cur_itr+1,
+        self.Info(msg="", extra={"status": {"cur_epoch": cur_epoch,
+                                            "cur_itr": cur_itr,
                                             "max_epoch": max_epoch,
                                             "max_itr": max_itr,
                                             "lr": lr,

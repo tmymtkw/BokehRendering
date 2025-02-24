@@ -8,5 +8,5 @@ class Scaling(BaseTransform):
 
     def __call__(self, img_input, img_target):
         img_input = resize(img_input, self.size, antialias=True)
-        img_target = resize(img_input, self.size, antialias=True)
+        img_target = resize(img_target, self.size, antialias=True)
         return img_input, img_target
