@@ -21,12 +21,12 @@ class Tester(Validator):
                                      img_target.to("cpu").detach().numpy().copy())
 
                 img_output = self.model(img_input)
-                # 出力の保存
-                save_image(img_output, self.cfg.GetPath("output")+f"imgs/{i}.png")
 
                 ssim_after = mean(self.ssim(img_output, img_target, self.cfg.GetDevice()))
-                o = img_output.to("cpu").detach().numpy().copy()
-                t = img_target.to("cpu").detach().numpy().copy()
+                img_output = img_output.to("cpu")
+                img_target = img_target.to("cpu")
+                o = img_output.detach().numpy().copy()
+                t = img_target.detach().numpy().copy()
                 psnr_after = self.psnr(o, t)
                 accr["SSIM"] += ssim_after
                 accr["PSNR"] += psnr_after
@@ -35,4 +35,8 @@ class Tester(Validator):
                           + f"before SSIM : {ssim_before} PSNR : {psnr_before}\n"
                           + f"after SSIM : {ssim_after} PSNR : {psnr_after}", extra={"n": 3})
             
+                # 出力の保存
+                if i <= self.cfg.GetInfo("option", "save_outputs"):
+                    save_image(img_output, self.cfg.GetPath("output")+f"imgs/{i}.png")
+
             self.Info(f"\033[3B[result] SSIM : {accr['SSIM']/len(self.dataset[0])} PSNR : {accr['PSNR']/len(self.dataset[0])}", extra={"n": 0})
