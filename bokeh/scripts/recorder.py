@@ -19,6 +19,7 @@ class Recorder(object):
 
         # プログラム実行日時を出力用ディレクトリ名にする
         d = datetime.now().strftime("%Y-%m%d-%H%M%S")
+        # コンフィグを書き換え
         self.cfg.cfg["path"]["output"] += d + "/"
         dir = self.cfg.GetPath("output")
         file = "output.log"
@@ -29,6 +30,11 @@ class Recorder(object):
         with open(os.path.join(dir, file), "w") as f:
             d = date.today().strftime("%Y-%m-%d")
             f.write(f"[Running Date : {d}]\n\n")
+        # テスト時はimgsディレクトリを作成
+        if self.args.mode == 1:
+            dir += "imgs/"
+            if not os.path.exists(dir):
+                os.mkdir(dir)
 
         # logger
         self.main_logger = getLogger("log_main")

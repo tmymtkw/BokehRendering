@@ -20,6 +20,9 @@ class ConfigLoader(object):
         return self.GetInfo("hyperparam", name)
         # return self.cfg["hyperparam"][name]
 
+    def GetDevice(self):
+        return self.cfg["option"]["device"]
+
     def PutError(self, path):
         return f"\n[Error] ファイルが見つかりません \
                  \nInput: {path} \
