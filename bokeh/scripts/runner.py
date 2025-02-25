@@ -34,7 +34,7 @@ class Runner(Analyzer):
         # この段階ではcpu上にあるのでOK
         if self.args.weight_path is not None:
             self.Info(f"load weight: {self.args.weight_path}\n")
-            weight = load(self.args.weight_path, weights_only=True)["model_state_dict"]
+            # weight = load(self.args.weight_path, weights_only=True)["model_state_dict"]
             # for key in weight.keys():
             #     self.Info(f"load {key}\n")
             self.model.load_state_dict(load(self.args.weight_path, weights_only=True)["model_state_dict"])
