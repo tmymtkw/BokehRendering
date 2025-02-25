@@ -13,7 +13,7 @@ class BokehDataset(Dataset):
         self.input_dir = input_dir
         self.target_dir = target_dir
         self.img_id = None
-        self.SetImgId()
+        self.SetImgId(is_train)
 
         self.stack = Stack(seed=seed)
         if is_train:
@@ -42,12 +42,19 @@ class BokehDataset(Dataset):
 
         return (img_input, img_target)
     
-    def SetImgId(self):
+    def SetImgId(self, is_train=True):
         self.img_id = [
             file 
             for file in os.listdir(os.path.join(self.img_dir, self.input_dir))
             if self.GetIsImage(file)
         ]
+
+        if not is_train:
+            def key_func(s):
+                return int(s[:-4])
+            
+            self.img_id.sort(key=key_func)
+            print(self.img_id[0:10])
 
         print(os.path.join(self.img_dir, self.input_dir))
         print(f"total img: {self.__len__()}\n")

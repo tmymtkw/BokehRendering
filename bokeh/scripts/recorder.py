@@ -32,9 +32,8 @@ class Recorder(object):
             f.write(f"[Running Date : {d}]\n\n")
         # テスト時はimgsディレクトリを作成
         if self.args.mode == 1:
-            dir += "imgs/"
-            if not os.path.exists(dir):
-                os.mkdir(dir)
+            if not os.path.exists(dir+"imgs/"):
+                os.mkdir(dir+"imgs/")
 
         # logger
         self.main_logger = getLogger("log_main")

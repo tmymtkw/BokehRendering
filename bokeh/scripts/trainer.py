@@ -136,7 +136,7 @@ class Trainer(Recorder):
                     "model_state_dict": self.model.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "loss": loss},
-                f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
+                f=self.cfg.GetPath("output") + f"weight_{epoch}.pth")
         
         self.Debug(f"model at epoch {epoch} weight is saved.")
 

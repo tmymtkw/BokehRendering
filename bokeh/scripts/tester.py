@@ -12,7 +12,7 @@ class Tester(Validator):
         accr = {"PSNR": 0, "SSIM": 0}
 
         with no_grad():
-            for i, (img_input, img_target) in enumerate(self.dataloader[0], 1):
+            for i, (img_input, img_target) in enumerate(self.dataloader[0]):
                 img_input = img_input.to(self.cfg.GetDevice())
                 img_target = img_target.to(self.cfg.GetDevice())
 
@@ -31,12 +31,12 @@ class Tester(Validator):
                 accr["SSIM"] += ssim_after
                 accr["PSNR"] += psnr_after
 
-                self.Info(f"image {i} {img_input.shape}\n"
+                self.Info(f"\nimage {i} {img_input.shape}\n"
                           + f"before SSIM : {ssim_before} PSNR : {psnr_before}\n"
-                          + f"after SSIM : {ssim_after} PSNR : {psnr_after}", extra={"n": 3})
+                          + f"after  SSIM : {ssim_after} PSNR : {psnr_after}", extra={"n": 4})
             
                 # 出力の保存
-                if i <= self.cfg.GetInfo("option", "save_outputs"):
+                if self.cfg.GetInfo("option", "save_all") or i <= self.cfg.GetInfo("option", "save_outputs"):
                     save_image(img_output, self.cfg.GetPath("output")+f"imgs/{i}.png")
-
-            self.Info(f"\033[3B[result] SSIM : {accr['SSIM']/len(self.dataset[0])} PSNR : {accr['PSNR']/len(self.dataset[0])}", extra={"n": 0})
+            print("\033[3B")
+            self.Info(f"[result] SSIM : {accr['SSIM']/len(self.dataset[0])} PSNR : {accr['PSNR']/len(self.dataset[0])}", extra={"n": 0})
