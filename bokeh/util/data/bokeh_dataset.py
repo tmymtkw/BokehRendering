@@ -18,11 +18,11 @@ class BokehDataset(Dataset):
         self.stack = Stack(seed=seed)
         if is_train:
             self.stack.Push(RandomCrop(height=1024, width=1024, seed=seed))
-            self.stack.Push(Scaling(size=[256, 256]))
+            self.stack.Push(Scaling(size=[512, 512]))
             self.stack.Push(RandomFlip(seed=seed))
         else:
             self.stack.Push(CenterCrop(h=1024, w=1024, seed=seed))
-            self.stack.Push(Scaling(size=[256, 256]))
+            self.stack.Push(Scaling(size=[512, 512]))
         self.stack.Push(Convert(convert_type="float32"))
         self.stack.Push(Normalize())
 

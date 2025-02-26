@@ -5,5 +5,5 @@ class MSELoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, img_input, img_target):
-        return mean(pow(img_input - img_target, 2)) + 1.0e-6
+    def forward(self, img_output, img_target):
+        return mean(pow(img_output - img_target, 2)) + 1.0e-6

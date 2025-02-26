@@ -3,8 +3,11 @@ from torch import clip, float32, rand, mean
 from torchvision.utils import save_image
 from torchvision import io
 from model.pynet import PyNET
+from model.blurred_borne import BlurredBorne
+from model.modules import SPDC
 from metrics.psnr import PSNR
 from metrics.ssim import SSIM
+from loss.blurred_mse import BlurredMSELoss
 import json
 
 def main():
@@ -16,35 +19,48 @@ def main():
     path = "/home/matsukawa_3/datasets/Bokeh_Simulation_Dataset/validation/"
     psnr = PSNR()
     ssim = SSIM()
+    blmse = BlurredMSELoss()
 
     for i in range(5):
+        break
         image_input = io.read_image(path+f"original/{i}.jpg", io.ImageReadMode.RGB)
         image_target = io.read_image(path+f"bokeh/{i}.jpg", io.ImageReadMode.RGB)
-        image_input = image_input.to(dtype=float32)
-        image_target = image_target.to(dtype=float32)
+        image_input = image_input.to(dtype=float32) / 255.0
+        image_target = image_target.to(dtype=float32) / 255.0
+        image_input = image_input.unsqueeze(0)
+        image_target = image_target.unsqueeze(0)
+        print(image_input.shape, image_target.shape)
+        save_image(image_target, f"bokeh/outputs/blur_{i}_origin.png")
 
-        img_salient = (image_target - image_input) / 255.0
+        blmse(image_input, image_target, i)
 
-        img_salient = clip(img_salient, 0.0, 255.0)
+        # img_salient = image_target - image_input
+        # img_salient = clip(img_salient, 0.0, 255.0)
+        # save_image(img_salient, f"bokeh/outputs/salient_t-s_{i}.png")
 
-        save_image(img_salient, f"bokeh/outputs/salient_t-s_{i}.png")
+    #     input_numpy = image_input.detach().numpy().copy()
+    #     target_numpy = image_target.detach().numpy().copy()
+    #     p = psnr(input_numpy, target_numpy)
+    #     s = ssim(image_input, image_target, device="cpu")
+    #     print(p)
+    #     print(mean(s))
+    # print(s[0, :10, :10])
 
-        input_numpy = image_input.detach().numpy().copy()
-        target_numpy = image_target.detach().numpy().copy()
-        image_input.unsqueeze(0)
-        image_target.unsqueeze(0)
-        p = psnr(input_numpy, target_numpy)
-        s = ssim(image_input, image_target, device="cpu")
-        print(p)
-        print(mean(s))
-    print(s[0, :10, :10])
+    i = rand((16, 3, 512, 512), dtype=float32)
+    i = i.to("cuda")
+    print("input")
+    print(f"input: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
 
-    # i = rand((1, 3, 1024, 1024), dtype=float32)
-    # print("model analyzing")
-    # model = PyNET(level=1)
-    # # print(model)
-    # o = model(i)
-    # print(o.shape)
+    print("model analyzing")
+    model = BlurredBorne(3)
+    model.to("cuda")
+    print(f"model: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
+    print()
+    # print(model)
+    o = model(i)
+    print(f"after: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
+
+    print(o[0].shape)
 
 if __name__ == "__main__":
     main()

@@ -259,6 +259,8 @@ class PyNET(nn.Module):
 
         return enhanced
 
+    def __str__(self):
+        return "PyNET"
 
 class ConvMultiBlock(nn.Module):
 

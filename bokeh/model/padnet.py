@@ -1,9 +1,12 @@
 from .net import Net
+from .blurred_borne import BlurredBorne
 from torch.nn import ZeroPad2d
 
 class PadNet(Net):
-    def __init__(self):
+    def __init__(self, model=BlurredBorne):
         super().__init__()
+
+        self.net = model()
 
     def forward(self, x):
         """パディングを行う
@@ -32,9 +35,12 @@ class PadNet(Net):
             pad = ZeroPad2d((l, r, t, b))
             x = pad(x)
 
-        super().forward(x=x)
+        out, bokeh = self.net(x)
 
         if is_pad:
-            x = x[:, :, t:-b, l:-r]
+            out = out[:, :, t:-b, l:-r]
 
-        return x
+        return out
+    
+    def load_state_dict(self, state_dict, strict = True, assign = False):
+        self.net.load_state_dict(state_dict, strict, assign)

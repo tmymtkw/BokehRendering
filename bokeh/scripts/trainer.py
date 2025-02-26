@@ -92,7 +92,7 @@ class Trainer(Recorder):
             img_output = self.model(img_input)
             # self.Debug(f"{img_output.shape}")
             # 損失の計算
-            loss = self.criteria(img_output, img_target)
+            loss = self.criteria(img_output[0], img_target)
 
             if is_train:
                 # 学習を行うとき
@@ -102,14 +102,14 @@ class Trainer(Recorder):
                 self.optimizer.step()
             else:
                 # TODO ssim
-                accr["SSIM"] += mean(self.ssim(img_output, img_target, self.cfg.GetDevice())).item()
-                o = img_output.to("cpu").detach().numpy().copy()
+                accr["SSIM"] += mean(self.ssim(img_output[0], img_target, self.cfg.GetDevice())).item()
+                o = img_output[0].to("cpu").detach().numpy().copy()
                 t = img_target.to("cpu").detach().numpy().copy()
                 # self.Debug(f"input: {img_input.shape}")
                 # self.Debug(f"target: {img_output.shape}")
                 accr["PSNR"] += self.psnr(o, t)
             if (i == 1):
-                self.Debug(f"require_grad: {img_output.requires_grad}")
+                self.Debug(f"require_grad: {img_output[0].requires_grad}")
 
             if i == 1 or i % self.cfg.GetInfo("option", "log_interval") == 0:
                 # ターミナルに学習状況を表示

@@ -21,7 +21,7 @@
     "hyperparam": {
         "epoch": 50,
         "lr": 5.0e-5,
-        "batch_size": 4,
+        "batch_size": 16,
         "iteration": 10000,
         "num_workers": 2
     }

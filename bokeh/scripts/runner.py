@@ -1,6 +1,6 @@
 from scripts.analyzer import Analyzer
 from loss.mse import MSELoss
-from model import PyNET
+from model import BlurredBorne
 from torch.optim import Adam
 from torch import load
 
@@ -29,7 +29,9 @@ class Runner(Analyzer):
         self.SetLogDigits(self.epochs, len(self.dataset[1]) // self.cfg.GetHyperParam("batch_size") + 1)
         
         # モデル定義
-        self.model = PyNET(1)
+        self.model = BlurredBorne()
+        self.Info(f"defined model: {str(self.model)}")
+        print("\033[1B")
         # 重みの読み込み
         # この段階ではcpu上にあるのでOK
         if self.args.weight_path is not None:
