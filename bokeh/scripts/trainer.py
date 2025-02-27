@@ -60,7 +60,6 @@ class Trainer(Recorder):
         self.Debug("-----validation---")
         with no_grad():
             self.Process(epoch=epoch, is_train=False)
-        print("\n" * 3)
 
     def Process(self, epoch, is_train=True):
         """データローダー1周分の処理を実施する関数
