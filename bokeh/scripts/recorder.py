@@ -30,10 +30,6 @@ class Recorder(object):
         with open(os.path.join(dir, file), "w") as f:
             d = date.today().strftime("%Y-%m-%d")
             f.write(f"[Running Date : {d}]\n\n")
-        # テスト時はimgsディレクトリを作成
-        if self.args.mode == 1:
-            if not os.path.exists(dir+"imgs/"):
-                os.mkdir(dir+"imgs/")
 
         # logger
         self.main_logger = getLogger("log_main")

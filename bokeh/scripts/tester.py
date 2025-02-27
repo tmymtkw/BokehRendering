@@ -1,6 +1,7 @@
+from scripts.validator import Validator
+import os
 from torch import no_grad, mean, nn
 from torchvision.utils import save_image
-from scripts.validator import Validator
 
 class Tester(Validator):
     def __init__(self):
@@ -8,6 +9,9 @@ class Tester(Validator):
 
     def Test(self):
         self.Debug("-----test-----")
+
+        if not os.path.exists(self.cfg.GetPath("output")+"imgs/"):
+            os.mkdir(self.cfg.GetPath("output")+"imgs/")
 
         accr = {"PSNR": 0, "SSIM": 0}
 

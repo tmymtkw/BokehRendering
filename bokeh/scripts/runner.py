@@ -64,6 +64,7 @@ class Runner(Analyzer):
         # Train
         if self.is_train:
             self.Train()
+            self.Test()
         # Test
         elif self.args.mode == TEST:
             self.Test()

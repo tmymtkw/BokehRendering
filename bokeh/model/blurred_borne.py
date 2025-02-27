@@ -12,8 +12,8 @@ class BlurredBorne(Module):
         self.stem = Sequential(ConvBlock(img_channels, img_channels*4, kernel_size=7, padding=3),
                                SPDC(img_channels*4, img_channels*8),
 
-                               ConvBlock(img_channels*4, img_channels*8, kernel_size=7, padding=3),
-                               SPDC(img_channels*8, img_channels*16))
+                               ConvBlock(img_channels*4, hidden_channels[0], kernel_size=7, padding=3),
+                               SPDC(hidden_channels[0], hidden_channels[0]*2))
 
         # focus attention
         # self.focus_generator = FocusGenerator()
@@ -29,20 +29,30 @@ class BlurredBorne(Module):
                                 kernel_size=2, stride=2)
         
         # spdc
-        self.in_2 = Sequential(SPDC(in_channels=hidden_channels[1], hidden_channels=hidden_channels[1]*2) for _ in range(2))
+        self.in_2 = Sequential(SPDC(in_channels=hidden_channels[1], hidden_channels=hidden_channels[1]*2),
+                               SPDC(in_channels=hidden_channels[1], hidden_channels=hidden_channels[1]*2))
 
-        self.in_4 = Sequential(SPDC(in_channels=hidden_channels[2], hidden_channels=hidden_channels[2]*2) for _ in range(2))
+        self.in_4 = Sequential(SPDC(in_channels=hidden_channels[2], hidden_channels=hidden_channels[2]*2),
+                               SPDC(in_channels=hidden_channels[2], hidden_channels=hidden_channels[2]*2))
         #  TODO
         self.bot = ConvBlock(in_channels=hidden_channels[3], out_channels=hidden_channels[4], kernel_size=3, padding=1)
 
         self.out_4 = Sequential(SPDC(in_channels=hidden_channels[2] + hidden_channels[4]//4,
-                                hidden_channels=hidden_channels[2]*2 + hidden_channels[4]//2) for _ in range(2))
+                                     hidden_channels=hidden_channels[2]*2 + hidden_channels[4]//2, has_skip_connection=False),
+                                SPDC(in_channels=hidden_channels[2] + hidden_channels[4]//4,
+                                     hidden_channels=hidden_channels[2]*2 + hidden_channels[4]//2))
 
         self.out_2 = Sequential(SPDC(in_channels=hidden_channels[1] + hidden_channels[2]//4 + hidden_channels[4]//16,
-                                hidden_channels=hidden_channels[1]*2 + hidden_channels[2]//2 + hidden_channels[4]//8) for _ in range(2))
+                                     hidden_channels=hidden_channels[1]*2 + hidden_channels[2]//2 + hidden_channels[4]//8,
+                                     has_skip_connection=False),
+                                SPDC(in_channels=hidden_channels[1] + hidden_channels[2]//4 + hidden_channels[4]//16,
+                                     hidden_channels=hidden_channels[1]*2 + hidden_channels[2]//2 + hidden_channels[4]//8))
 
         self.bokeh_conv = ConvBlock(in_channels=hidden_channels[1] + hidden_channels[2]//4 + hidden_channels[4]//16,
                                     out_channels=3, kernel_size=3, stride=1, padding=1, bias=False)
+        
+        self.out_conv = Sequential(SPDC(in_channels=6, hidden_channels=6*3),
+                                     ConvBlock(in_channels=6, out_channels=3, kernel_size=1, stride=1, padding=0))
 
     def forward(self, x):
         # b, h[0], h, w
@@ -79,7 +89,8 @@ class BlurredBorne(Module):
         bokeh_out = interpolate(bokeh_out_2, scale_factor=2, mode="bilinear")
 
         # out = x * (1 - focus_weight) + bokeh_out * focus_weight
-        out = (x + bokeh_out) / 2
+        out = cat([x, bokeh_out], dim=1)
+        out = self.out_conv(out)
 
         return (out, bokeh_out_2)
         
