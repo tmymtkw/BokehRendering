@@ -1,6 +1,6 @@
 # from torch import nn
 from torch import mean, stack
-from torch.nn import Module, Linear, Hardtanh, Tanh
+from torch.nn import Module, Linear, Hardtanh, Tanh, Sigmoid
 from .conv_block import ConvBlock
 
 class SPDC(Module):
@@ -23,7 +23,8 @@ class SPDC(Module):
         self.pw_project = ConvBlock(hidden_channels, in_channels, kernel_size=1)
 
         self.weight_mlp = Linear(3, 3, bias=False)
-        self.act = Tanh()
+        # self.act = Tanh()
+        self.act = Sigmoid()
 
         self.alpha = alpha
         self.has_skip_connection = has_skip_connection
@@ -42,7 +43,8 @@ class SPDC(Module):
             weight_1 = mean(out_1, [2, 3], keepdim=False)
             weight_2 = mean(out_2, [2, 3], keepdim=False)
             weight = stack((weight_0, weight_1, weight_2), dim=2)
-            weight = weight + self.act(self.weight_mlp(weight)) * self.alpha
+            # weight = weight + self.act(self.weight_mlp(weight)) * self.alpha
+            weight = self.act(self.weight_mlp(weight))
             weight = weight.unsqueeze(3)
             # print(weight.shape)
             out = out_0 * weight[:, :, 0:1, :] + out_1 * weight[:, :, 1:2, :] + out_2[:, :, 2:3, :]

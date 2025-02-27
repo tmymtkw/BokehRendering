@@ -1,46 +1,45 @@
 # from torch import nn
 from torch import cat, clamp
-from torch.nn import Module, Conv2d, Sequential
+from torch.nn import Module, Sequential
 from torch.nn.functional import pixel_shuffle, interpolate
 from .modules import FocusGenerator, SPDC
 from .modules import ConvBlock
 
 class BlurredBorne(Module):
-    def __init__(self, img_channels=3, hidden_channels=[16, 32, 64, 128, 384]):
+    def __init__(self, img_channels=3, hidden_channels=[32, 64, 128, 256, 384]):
         super().__init__()
         # first process
-        self.stem = Sequential(ConvBlock(img_channels, img_channels*2, 1),
-                               ConvBlock(img_channels*2, img_channels*2, 3, stride=1, padding=3, dilation=3, groups=img_channels*2),
-                               ConvBlock(img_channels*2, img_channels*4, 1),
-                               ConvBlock(img_channels*4, img_channels*8, 1),
-                               ConvBlock(img_channels*8, img_channels*8, 3, stride=1, padding=3, dilation=3, groups=img_channels*8),
-                               ConvBlock(img_channels*8, hidden_channels[0], 1))
+        self.stem = Sequential(ConvBlock(img_channels, img_channels*4, kernel_size=7, padding=3),
+                               SPDC(img_channels*4, img_channels*8),
+
+                               ConvBlock(img_channels*4, img_channels*8, kernel_size=7, padding=3),
+                               SPDC(img_channels*8, img_channels*16))
 
         # focus attention
         # self.focus_generator = FocusGenerator()
 
         # down sample
-        self.down_2 = Conv2d(in_channels=hidden_channels[0], out_channels=hidden_channels[1],
+        self.down_2 = ConvBlock(in_channels=hidden_channels[0], out_channels=hidden_channels[1],
                                 kernel_size=2, stride=2)
         
-        self.down_4 = Conv2d(in_channels=hidden_channels[1], out_channels=hidden_channels[2],
+        self.down_4 = ConvBlock(in_channels=hidden_channels[1], out_channels=hidden_channels[2],
                                 kernel_size=2, stride=2)
         
-        self.down_8 = Conv2d(in_channels=hidden_channels[2], out_channels=hidden_channels[3],
+        self.down_8 = ConvBlock(in_channels=hidden_channels[2], out_channels=hidden_channels[3],
                                 kernel_size=2, stride=2)
         
         # spdc
-        self.in_2 = SPDC(in_channels=hidden_channels[1], hidden_channels=hidden_channels[1]*2)
+        self.in_2 = Sequential(SPDC(in_channels=hidden_channels[1], hidden_channels=hidden_channels[1]*2) for _ in range(2))
 
-        self.in_4 = SPDC(in_channels=hidden_channels[2], hidden_channels=hidden_channels[2]*2)
+        self.in_4 = Sequential(SPDC(in_channels=hidden_channels[2], hidden_channels=hidden_channels[2]*2) for _ in range(2))
         #  TODO
         self.bot = ConvBlock(in_channels=hidden_channels[3], out_channels=hidden_channels[4], kernel_size=3, padding=1)
 
-        self.out_4 = SPDC(in_channels=hidden_channels[2] + hidden_channels[4]//4,
-                          hidden_channels=hidden_channels[2]*2 + hidden_channels[4]//2)
+        self.out_4 = Sequential(SPDC(in_channels=hidden_channels[2] + hidden_channels[4]//4,
+                                hidden_channels=hidden_channels[2]*2 + hidden_channels[4]//2) for _ in range(2))
 
-        self.out_2 = SPDC(in_channels=hidden_channels[1] + hidden_channels[2]//4 + hidden_channels[4]//16,
-                          hidden_channels=hidden_channels[1]*2 + hidden_channels[2]//2 + hidden_channels[4]//8)
+        self.out_2 = Sequential(SPDC(in_channels=hidden_channels[1] + hidden_channels[2]//4 + hidden_channels[4]//16,
+                                hidden_channels=hidden_channels[1]*2 + hidden_channels[2]//2 + hidden_channels[4]//8) for _ in range(2))
 
         self.bokeh_conv = ConvBlock(in_channels=hidden_channels[1] + hidden_channels[2]//4 + hidden_channels[4]//16,
                                     out_channels=3, kernel_size=3, stride=1, padding=1, bias=False)

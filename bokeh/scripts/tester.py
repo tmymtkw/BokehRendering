@@ -20,7 +20,7 @@ class Tester(Validator):
                 psnr_before = self.psnr(img_input.to("cpu").detach().numpy().copy(), 
                                      img_target.to("cpu").detach().numpy().copy())
 
-                img_output = self.model(img_input)
+                img_output = self.model(img_input)[0]
 
                 ssim_after = mean(self.ssim(img_output, img_target, self.cfg.GetDevice()))
                 img_output = img_output.to("cpu")

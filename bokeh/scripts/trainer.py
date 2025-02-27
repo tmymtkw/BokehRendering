@@ -23,7 +23,9 @@ class Trainer(Recorder):
         self.dataloader: list[DataLoader] = []
 
         self.optimizer = None
-        self.criteria = None
+        self.mse_loss = None
+        self.ssim_loss = None
+        self.blurmse_loss = None
         self.psnr = PSNR()
         self.ssim = SSIM()
         self.epochs = self.cfg.GetHyperParam("epoch")
@@ -92,7 +94,9 @@ class Trainer(Recorder):
             img_output = self.model(img_input)
             # self.Debug(f"{img_output.shape}")
             # 損失の計算
-            loss = self.criteria(img_output[0], img_target)
+            loss = (self.mse_loss(img_output[0], img_target)
+                    + self.ssim_loss(img_output[0], img_target)
+                    + self.blurmse_loss(img_output[1], img_target))
 
             if is_train:
                 # 学習を行うとき
@@ -128,7 +132,7 @@ class Trainer(Recorder):
                     "model_state_dict": self.model.to("cpu").state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "loss": loss},
-                f=self.cfg.GetPath("output") + f"weight_{epoch+1}.pth")
+                f=self.cfg.GetPath("output") + f"weight_{epoch}.pth")
             # .to()によるメモリ移動を戻す
             self.model.to("cuda")
         else:

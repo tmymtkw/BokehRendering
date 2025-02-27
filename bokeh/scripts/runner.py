@@ -1,5 +1,5 @@
 from scripts.analyzer import Analyzer
-from loss.mse import MSELoss
+from loss import MSELoss, SSIMLoss, BlurredMSELoss
 from model import BlurredBorne
 from torch.optim import Adam
 from torch import load
@@ -45,7 +45,9 @@ class Runner(Analyzer):
         # オプティマイザ定義
         self.optimizer = Adam(self.model.parameters(), lr=self.cfg.GetHyperParam("lr"))
         # 損失関数設定
-        self.criteria = MSELoss()
+        self.mse_loss = MSELoss()
+        self.ssim_loss = SSIMLoss()
+        self.blurmse_loss = BlurredMSELoss()
         # # 使用プロセッサ設定
         # self.SetDevice(device=self.cfg.GetInfo("option", "device"))
 
