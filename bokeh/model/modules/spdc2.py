@@ -1,10 +1,10 @@
 # from torch import nn
 from torch import mean, stack
-from torch.nn import Module, Linear, Hardtanh, Tanh, Sigmoid
+from torch.nn import Module, Linear, Sigmoid, Sequential, ReLU
 from .conv_block import ConvBlock
 
-class SPDC(Module):
-    def __init__(self, in_channels, hidden_channels, distance=[1, 3, 5], alpha=0.5, has_skip_connection=True):
+class SPDC2(Module):
+    def __init__(self, in_channels, hidden_channels, distance=[1, 3, 5], reduction=4, has_skip_connection=True):
         super().__init__()
         self.pw_expand = ConvBlock(in_channels, hidden_channels, kernel_size=1)
 
@@ -22,11 +22,16 @@ class SPDC(Module):
 
         self.pw_project = ConvBlock(hidden_channels, in_channels, kernel_size=1)
 
-        self.weight_mlp = Linear(3, 3, bias=False)
-        # self.act = Tanh()
+        self.weight_mlp = Sequential(Linear(3, 12, bias=False),
+                                     ReLU(),
+                                     Linear(12, 3, bias=False))
+
+        self.se_layer = Sequential(Linear(hidden_channels, hidden_channels//reduction, bias=False),
+                                   ReLU(),
+                                   Linear(hidden_channels//reduction, hidden_channels, bias=False))
+        
         self.act = Sigmoid()
 
-        self.alpha = alpha
         self.has_skip_connection = has_skip_connection
 
     def forward(self, x):
@@ -36,18 +41,18 @@ class SPDC(Module):
         out_1 = self.dw_1(out_0)
         out_2 = self.dw_2(out_1)
 
-        if self.alpha <= 0.0:
-            out = out_0 + out_1 + out_2
-        else:
-            weight_0 = mean(out_0, [2, 3], keepdim=False)
-            weight_1 = mean(out_1, [2, 3], keepdim=False)
-            weight_2 = mean(out_2, [2, 3], keepdim=False)
-            weight = stack((weight_0, weight_1, weight_2), dim=2)
-            # weight = weight + self.act(self.weight_mlp(weight)) * self.alpha
-            weight = self.act(self.weight_mlp(weight))
-            weight = weight.unsqueeze(3)
-            # print(weight.shape)
-            out = out_0 * weight[:, :, 0:1, :] + out_1 * weight[:, :, 1:2, :] + out_2 * weight[:, :, 2:3, :] + feature
+        # calculate channel attention weight
+        weight = stack((mean(out_0, [2, 3], keepdim=False), 
+                        mean(out_1, [2, 3], keepdim=False), 
+                        mean(out_2, [2, 3], keepdim=False)), dim=2)
+        weight_t = weight.transpose(1, 2)
+        weight = self.act(self.weight_mlp(weight) + self.se_layer(weight_t).transpose(1, 2))
+        weight = weight.unsqueeze(3)
+
+        out = out_0 * weight[:, :, 0:1, :] \
+              + out_1 * weight[:, :, 1:2, :] \
+              + out_2 * weight[:, :, 2:3, :] \
+              + feature
 
         out = self.pw_project(out)
 

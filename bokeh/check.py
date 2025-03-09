@@ -4,6 +4,7 @@ from torchvision.utils import save_image
 from torchvision import io
 from model.pynet import PyNET
 from model.blurred_borne import BlurredBorne
+from model import BlurredBorne2
 from model.modules import SPDC
 from metrics.psnr import PSNR
 from metrics.ssim import SSIM
@@ -22,7 +23,7 @@ def main():
     blmse = BlurredMSELoss(sigma=[2, 2.5, 3])
 
     for i in range(5):
-        # break
+        break
         image_input = io.read_image(path+f"original/{i}.jpg", io.ImageReadMode.RGB)
         image_target = io.read_image(path+f"bokeh/{i}.jpg", io.ImageReadMode.RGB)
         image_input = image_input.to(dtype=float32) / 255.0
@@ -46,19 +47,19 @@ def main():
     #     print(mean(s))
     # print(s[0, :10, :10])
 
-    # i = rand((16, 3, 512, 512), dtype=float32)
-    # i = i.to("cuda")
-    # print("input")
-    # print(f"input: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
+    i = rand((4, 3, 512, 512), dtype=float32)
+    i = i.to("cuda")
+    print("input")
+    print(f"input: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
 
-    # print("model analyzing")
-    # model = BlurredBorne(3)
-    # model.to("cuda")
-    # print(f"model: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
-    # print()
-    # # print(model)
-    # o = model(i)
-    # print(f"after: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
+    print("model analyzing")
+    model = BlurredBorne2(3)
+    model.to("cuda")
+    print(f"model: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
+    print()
+    # print(model)
+    o = model(i)
+    print(f"after: {cuda.max_memory_allocated() / (1024 * 1024)} MB")
 
     # print(o[0].shape)
 

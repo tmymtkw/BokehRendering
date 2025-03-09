@@ -12,7 +12,7 @@ class Recorder(object):
         parser = MainParser()
         # コマンド受け取り
         self.args = parser.parse_args()
-        self.cfg = ConfigLoader(self.args.cfg_path)
+        self.cfg = ConfigLoader("bokeh/config/" + self.args.cfg_path)
 
         # "output"ディレクトリがあるか確認
         assert os.path.isdir(self.cfg.GetPath("output")), f"\n[ERROR] incorrect dir: {self.cfg.GetPath('output')}"

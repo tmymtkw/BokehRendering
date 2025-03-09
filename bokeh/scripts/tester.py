@@ -1,6 +1,6 @@
 from scripts.validator import Validator
 import os
-from torch import no_grad, mean, nn
+from torch import no_grad, mean
 from torchvision.utils import save_image
 
 class Tester(Validator):
@@ -9,6 +9,7 @@ class Tester(Validator):
 
     def Test(self):
         self.Debug("-----test-----")
+        print("\n"*3)
 
         if not os.path.exists(self.cfg.GetPath("output")+"imgs/"):
             os.mkdir(self.cfg.GetPath("output")+"imgs/")

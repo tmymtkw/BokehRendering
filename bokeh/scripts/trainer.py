@@ -25,7 +25,7 @@ class Trainer(Recorder):
         self.optimizer = None
         self.mse_loss = None
         self.ssim_loss = None
-        self.blurmse_loss = None
+        self.blur_loss = None
         self.psnr = PSNR()
         self.ssim = SSIM()
         self.epochs = self.cfg.GetHyperParam("epoch")
@@ -96,7 +96,7 @@ class Trainer(Recorder):
             # 損失の計算
             loss = (self.mse_loss(img_output[0], img_target)
                     + self.ssim_loss(img_output[0], img_target)
-                    + self.blurmse_loss(img_output[1], img_target))
+                    + self.blur_loss(img_output[1], img_target))
 
             if is_train:
                 # 学習を行うとき

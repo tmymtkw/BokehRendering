@@ -1,6 +1,6 @@
 from scripts.analyzer import Analyzer
-from loss import MSELoss, SSIMLoss, BlurredMSELoss
-from model import BlurredBorne
+from loss import MSELoss, SSIMLoss, BlurredMSELoss, BlurredSSIMLoss, BlurredLoss
+from model import BlurredBorne, BlurredBorne2
 from torch.optim import Adam
 from torch import load
 
@@ -29,7 +29,8 @@ class Runner(Analyzer):
         self.SetLogDigits(self.epochs, len(self.dataset[1]) // self.cfg.GetHyperParam("batch_size") + 1)
         
         # モデル定義
-        self.model = BlurredBorne()
+        model_class = globals()[self.cfg.GetInfo("model", "name")]
+        self.model = model_class(img_channels=3)
         self.Info(f"defined model: {str(self.model)}")
         print("\033[1B")
         # 重みの読み込み
@@ -47,9 +48,7 @@ class Runner(Analyzer):
         # 損失関数設定
         self.mse_loss = MSELoss()
         self.ssim_loss = SSIMLoss()
-        self.blurmse_loss = BlurredMSELoss()
-        # # 使用プロセッサ設定
-        # self.SetDevice(device=self.cfg.GetInfo("option", "device"))
+        self.blur_loss = BlurredLoss()
 
         # メイン処理実行
         self.Operate()
