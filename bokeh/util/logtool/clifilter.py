@@ -22,8 +22,8 @@ class CLIFilter():
 
         msg = ("\n[epoc]    |" + FILL + ("_" * epoch_bar) + CLOSE + "_" * (self.length - epoch_bar) + f"| {status['cur_epoch']} / {status['max_epoch']}     \n"
                + "[iter]    |" + FILL + ("_" * itr_bar) + CLOSE + "_" * (self.length - itr_bar) + f"| {status['cur_itr']} / {status['max_itr']}     \n"
-               + f"[parm]    lr : {status['lr']:<12f}\n"
-               + f"[loss]    curr : {status['loss']:<12f} mean : {mean(self.losses):<12f}\n"
+               + f"[parm]    lr : {status['lr']:<.6e}\n"
+               + f"[loss]    curr : {status['loss']:<.9f} mean : {mean(self.losses):<.9f}\n"
                + f"")
         
         if itr_bar == self.length:

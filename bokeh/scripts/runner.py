@@ -1,6 +1,7 @@
 from scripts.analyzer import Analyzer
 from loss import MSELoss, SSIMLoss, BlurredMSELoss, BlurredSSIMLoss, BlurredLoss
-from model import BlurredBorne, BlurredBorne2
+from model import BlurredBorne, BlurredBorne2, BlurredBorne3
+from scheduler.linear_cos import LinearCosineScheduler
 from torch.optim import Adam
 from torch import load
 
@@ -45,10 +46,15 @@ class Runner(Analyzer):
         self.model.to(self.cfg.GetDevice())
         # オプティマイザ定義
         self.optimizer = Adam(self.model.parameters(), lr=self.cfg.GetHyperParam("lr"))
+        # スケジューラ
+        self.scheduler = LinearCosineScheduler(self.optimizer, warm_steps=1500, 
+                                               flag_epoch=self.cfg.GetHyperParam("epoch") / 10, max_epochs=self.cfg.GetHyperParam("epoch"),
+                                               start_lr=1.0e-6, goal_lr=5.0e-5)
         # 損失関数設定
         self.mse_loss = MSELoss()
         self.ssim_loss = SSIMLoss()
-        self.blur_loss = BlurredLoss()
+        self.blur_loss = BlurredLoss(kernel_size=[5, 7, 9],
+                                     sigma=[1, 1.5, 2])
 
         # メイン処理実行
         self.Operate()

@@ -23,6 +23,8 @@ class Trainer(Recorder):
         self.dataloader: list[DataLoader] = []
 
         self.optimizer = None
+        self.scheduler = None
+
         self.mse_loss = None
         self.ssim_loss = None
         self.blur_loss = None
@@ -104,6 +106,12 @@ class Trainer(Recorder):
                 loss.backward()
                 # オプティマイザの更新
                 self.optimizer.step()
+                # スケジューラの更新(warmup)
+                if self.scheduler is not None:
+                    try:
+                        self.scheduler.warm()
+                    except AttributeError:
+                        pass
             else:
                 # TODO ssim
                 accr["SSIM"] += mean(self.ssim(img_output[0], img_target, self.cfg.GetDevice())).item()
@@ -121,11 +129,14 @@ class Trainer(Recorder):
                                     i,
                                     self.epochs,
                                     self.size[is_train],
-                                    self.cfg.GetHyperParam("lr"),
+                                    self.optimizer.param_groups[0]["lr"],
                                     loss=loss.item())
                 if not is_train:
-                    self.Info(f"validating... loss : {loss.item():.12f} PSNR : {accr['PSNR']/i:.12f} SSIM : {accr['SSIM']/i:.12f}", extra={ "n": 1 })
-                    
+                    self.Info(f"validating... loss : {loss.item():.9f} PSNR : {accr['PSNR']/i:.9f} SSIM : {accr['SSIM']/i:.9f}", extra={ "n": 1 })
+        # スケジューラの更新(step)
+        if is_train:
+            self.scheduler.step()
+
     def PutModel(self, epoch, loss=0.0):
         if self.cfg.GetDevice() == "cuda":
             save(obj={"epoch": epoch,
