@@ -45,13 +45,14 @@ class SPDC3(Module):
         weight = stack((mean(out_0, [2, 3], keepdim=False), 
                         mean(out_1, [2, 3], keepdim=False), 
                         mean(out_2, [2, 3], keepdim=False)), dim=2)
-        weight_t = weight.transpose(1, 2)
-        weight = self.se_layer(weight_t).transpose(1, 2) + self.weight_mlp(weight)
+        # weight_t = weight.transpose(1, 2)
+        weight = self.weight_mlp(weight)
+        # weight = self.se_layer(weight_t).transpose(1, 2)
         weight = weight.unsqueeze(3)
 
         out = (out_0 * weight[:, :, 0:1, :]
                + out_1 * weight[:, :, 1:2, :]
-               + out_2 * weight[:, :, 2:3, :]) * 0.5
+               + out_2 * weight[:, :, 2:3, :])
 
         out = self.pw_project(out)
 

@@ -97,8 +97,8 @@ class Trainer(Recorder):
             # self.Debug(f"{img_output.shape}")
             # 損失の計算
             loss = (self.mse_loss(img_output[0], img_target)
-                    + self.ssim_loss(img_output[0], img_target)
-                    + self.blur_loss(img_output[1], img_target))
+                    + self.ssim_loss(img_output[0], img_target))
+                    # + self.blur_loss(img_output[1], img_target))
 
             if is_train:
                 # 学習を行うとき
@@ -179,7 +179,12 @@ class Trainer(Recorder):
                                      self.cfg.GetPath("input"),
                                      self.cfg.GetPath("target"),
                                      is_train=False)
-        self.dataset = [valid_dataset, train_dataset]
+        test_dataset = BokehDataset(self.cfg.GetPath("dataset") + self.cfg.GetPath("validation"),
+                                    self.cfg.GetPath("input"),
+                                    self.cfg.GetPath("target"),
+                                    is_train=False)
+        test_dataset.stack.transforms = test_dataset.stack.transforms[-2:]
+        self.dataset = [valid_dataset, train_dataset, test_dataset]
         self.size = [len(valid_dataset), len(train_dataset) // self.cfg.GetHyperParam("batch_size")]
         self.Debug("Dataset created.")
 
@@ -202,8 +207,15 @@ class Trainer(Recorder):
                                       num_workers=1,
                                       pin_memory=pin_memory,
                                       drop_last=False)
+        test_dataloader = DataLoader(self.dataset[2],
+                                     batch_size=1,
+                                     shuffle=False,
+                                     num_workers=1,
+                                     pin_memory=False,
+                                     drop_last=False)
         self.dataloader.append(valid_dataloader)
         self.dataloader.append(train_dataloader)
+        self.dataloader.append(test_dataloader)
         self.Debug("Dataloader created.")
     
     def DisplayStatus(self, cur_epoch, cur_itr, max_epoch, max_itr, lr=0.0, loss=0.0):

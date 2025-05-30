@@ -2,6 +2,7 @@ from scripts.validator import Validator
 import os
 from torch import no_grad, mean
 from torchvision.utils import save_image
+from util.functions.pad_data import padData, unpadData
 
 class Tester(Validator):
     def __init__(self):
@@ -17,22 +18,27 @@ class Tester(Validator):
         accr = {"PSNR": 0, "SSIM": 0}
 
         with no_grad():
-            for i, (img_input, img_target) in enumerate(self.dataloader[0]):
+            for i, (img_input, img_target) in enumerate(self.dataloader[2]):
                 img_input = img_input.to(self.cfg.GetDevice())
                 img_target = img_target.to(self.cfg.GetDevice())
 
                 ssim_before = mean(self.ssim(img_input, img_target, self.cfg.GetDevice()))
                 psnr_before = self.psnr(img_input.to("cpu").detach().numpy().copy(), 
                                      img_target.to("cpu").detach().numpy().copy())
+                
+                pad_input, l, r, t, b = padData(img_input)
+                # print(img_input.shape, pad_input.shape, l, r, t, b)
 
-                img_output = self.model(img_input)[0]
+                img_output = self.model(pad_input)[0]
+                img_output = unpadData(img_output, l, r, t, b)
+                # print(img_output.shape)
 
                 ssim_after = mean(self.ssim(img_output, img_target, self.cfg.GetDevice()))
                 img_output = img_output.to("cpu")
                 img_target = img_target.to("cpu")
-                o = img_output.detach().numpy().copy()
-                t = img_target.detach().numpy().copy()
-                psnr_after = self.psnr(o, t)
+                out = img_output.detach().numpy().copy()
+                tar = img_target.detach().numpy().copy()
+                psnr_after = self.psnr(out, tar)
                 accr["SSIM"] += ssim_after
                 accr["PSNR"] += psnr_after
 

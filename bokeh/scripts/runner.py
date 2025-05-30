@@ -1,9 +1,10 @@
 from scripts.analyzer import Analyzer
 from loss import MSELoss, SSIMLoss, BlurredMSELoss, BlurredSSIMLoss, BlurredLoss
-from model import BlurredBorne, BlurredBorne2, BlurredBorne3
+from model import BlurredBorne, BlurredBorne2, BlurredBorne3, Net
 from scheduler.linear_cos import LinearCosineScheduler
 from torch.optim import Adam
 from torch import load
+from torch.nn import SmoothL1Loss
 
 TRAIN = 0
 TEST = 1
@@ -31,7 +32,8 @@ class Runner(Analyzer):
         
         # モデル定義
         model_class = globals()[self.cfg.GetInfo("model", "name")]
-        self.model = model_class(img_channels=3)
+        # self.model = model_class(img_channels=3)
+        self.model = model_class()
         self.Info(f"defined model: {str(self.model)}")
         print("\033[1B")
         # 重みの読み込み
@@ -47,14 +49,13 @@ class Runner(Analyzer):
         # オプティマイザ定義
         self.optimizer = Adam(self.model.parameters(), lr=self.cfg.GetHyperParam("lr"))
         # スケジューラ
-        self.scheduler = LinearCosineScheduler(self.optimizer, warm_steps=1500, 
+        self.scheduler = LinearCosineScheduler(self.optimizer, warm_steps=10000, 
                                                flag_epoch=self.cfg.GetHyperParam("epoch") / 10, max_epochs=self.cfg.GetHyperParam("epoch"),
-                                               start_lr=1.0e-6, goal_lr=5.0e-5)
+                                               start_lr=1.0e-5, goal_lr=self.cfg.GetHyperParam("lr") * 0.05)
         # 損失関数設定
         self.mse_loss = MSELoss()
         self.ssim_loss = SSIMLoss()
-        self.blur_loss = BlurredLoss(kernel_size=[5, 7, 9],
-                                     sigma=[1, 1.5, 2])
+        self.blur_loss = BlurredMSELoss()
 
         # メイン処理実行
         self.Operate()
